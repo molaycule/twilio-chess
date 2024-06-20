@@ -1,0 +1,9 @@
+---
+import "../styles/globals.css";
+import Layout from "../layouts/Layout.astro";
+import Chessboard from "../components/Chessboard.jsx";
+---
+
+<Layout title="Chess Challenge">
+  <Chessboard client:only="react" />
+</Layout>
