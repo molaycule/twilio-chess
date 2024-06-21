@@ -2,6 +2,7 @@ import express from "express";
 import Twilio from "twilio";
 import AWS from "aws-sdk";
 import fs from "fs";
+import bodyParser from "body-parser";
 import getGeneratedChessboardDirectory from "./utils/getGeneratedChessboardDirectory.js";
 import s3Uploader from "./utils/s3Uploader.js";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -27,6 +28,7 @@ const s3 = new AWS.S3();
 
 const app = express();
 app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(getGeneratedChessboardDirectory()));
 
 app.post("/api/chess/initiate", async (req, res) => {
