@@ -74,6 +74,7 @@ app.post("/api/chess/reply", async (req, res) => {
     const message = req.body.Body;
     const from = req.body.From;
     console.log(`Received message: "${message}" from ${from}`);
+    console.log("req.body", JSON.stringify(req.body));
     res.json({
       success: true,
       message: `Received message: "${message}" from ${from}`
