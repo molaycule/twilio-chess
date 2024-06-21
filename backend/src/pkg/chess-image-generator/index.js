@@ -1,6 +1,7 @@
 import { Chess } from "chess.js";
 import { createCanvas, loadImage } from "canvas";
 import { applyDefaultConfig } from "./config.js";
+import getGeneratedChessboardDirectory from "../../utils/getGeneratedChessboardDirectory.js";
 import path from "path";
 import fs from "fs";
 
@@ -14,8 +15,8 @@ export class ChessImageGenerator {
    */
   static async fromFEN(FEN, lastMove, out) {
     const chess = new Chess(FEN);
-    const bf = await this.generateBuffer(chess, lastMove);
-    return await this.generatePNG(bf, out);
+    const buffer = await this.generateBuffer(chess, lastMove);
+    return this.generatePNG(buffer, out);
   }
 
   /**
@@ -25,9 +26,14 @@ export class ChessImageGenerator {
    * @param path output
    * @returns output path
    */
-  static async generatePNG(buffer, path) {
-    await fs.writeFileSync(path, buffer);
-    return path;
+  static generatePNG(buffer, filePath) {
+    let dir = getGeneratedChessboardDirectory();
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    fs.writeFileSync(filePath, buffer);
+    return filePath;
   }
 
   static highlightMove(ctx, move) {
@@ -67,7 +73,9 @@ export class ChessImageGenerator {
     ctx.fillStyle = _config.light;
     ctx.fill();
 
-    this.highlightMove(ctx, chess.move(lastMove));
+    if (lastMove) {
+      this.highlightMove(ctx, chess.move(lastMove));
+    }
 
     const col = _config.view === "w" ? r => r + 1 : r => 7 - r + 1;
     const row = c => "abcdefgh"[_config.view === "w" ? c : 7 - c];

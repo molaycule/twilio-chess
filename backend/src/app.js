@@ -1,31 +1,87 @@
 import express from "express";
+import Twilio from "twilio";
+import AWS from "aws-sdk";
+import fs from "fs";
+import getGeneratedChessboardDirectory from "./utils/getGeneratedChessboardDirectory.js";
+import s3Uploader from "./utils/s3Uploader.js";
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import { sessions } from "./db/schema.js";
 import { ChessImageGenerator } from "./pkg/chess-image-generator/index.js";
 import { config } from "dotenv";
+import constants from "./constants/index.js";
 
 config({ path: "./src/.env" });
 
+const twilioClient = Twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: "us-east-1"
+});
+const s3 = new AWS.S3();
+
 const app = express();
 app.use(express.json());
-
-app.get("/api/chess/", async (req, res) => {
-  res.json({ hello: "index route" });
-});
+app.use(express.static(getGeneratedChessboardDirectory()));
 
 app.post("/api/chess/initiate", async (req, res) => {
-  const sql = neon(process.env.DATABASE_CONN_STRING);
-  const db = drizzle(sql);
-  const userData = req.body;
-  await db.insert(sessions).values({ ...userData });
+  try {
+    let chessboardImageUrl = "";
+    const sql = neon(process.env.DATABASE_CONN_STRING);
+    const db = drizzle(sql);
+    const userData = req.body;
+    await db.insert(sessions).values({ ...userData });
 
-  if (userData.setup === "clean") {
-    const fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // Example FEN
-    const lastMove = "e2e4"; // Example move
-    await ChessImageGenerator.fromFEN(fen, lastMove, "./chessboard.png");
+    if (userData.contact && userData.setup === "clean") {
+      await ChessImageGenerator.fromFEN(
+        constants.defaultFen,
+        undefined,
+        `./public/${userData.contact.split(".")[0]}.png`
+      );
+    }
+
+    const dir = getGeneratedChessboardDirectory();
+    if (fs.existsSync(dir)) {
+      const file = `${dir}/${userData.contact}.png`;
+      chessboardImageUrl = await s3Uploader(s3, file);
+    }
+
+    if (userData.contact && userData.medium === "whatsapp") {
+      if (fs.existsSync(dir)) {
+        await twilioClient.messages.create({
+          body: "Welcome to Twilio Chess, just reply by sending your move in standard algebraic notation",
+          mediaUrl: chessboardImageUrl,
+          from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
+          to: `whatsapp:${userData.contact}`
+        });
+      }
+    }
+
+    res.json({ success: true, message: "Chess initiated" });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, error });
   }
-  res.json({ hello: "world" });
+});
+
+app.post("/api/chess/reply", async (req, res) => {
+  try {
+    const message = req.body.Body;
+    const from = req.body.From;
+    console.log(`Received message: "${message}" from ${from}`);
+    res.json({
+      success: true,
+      message: `Received message: "${message}" from ${from}`
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, error });
+  }
 });
 
 // Run the server!
