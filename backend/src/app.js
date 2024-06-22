@@ -69,7 +69,7 @@ app.post("/api/chess/initiate", async (req, res) => {
     await ChessImageGenerator.fromFEN(
       startingFEN,
       undefined,
-      `./public/${userData.contact.split(".")[0]}.png`
+      `${userData.contact.split(".")[0]}.png`
     );
 
     const chessboardImageUrl = await handleS3Uploader(
@@ -180,7 +180,7 @@ app.post("/api/chess/reply", async (req, res) => {
     await ChessImageGenerator.fromFEN(
       afterPlayerMoveFEN,
       aiMove.lan,
-      `./public/${whatsappNumber}.png`
+      `${whatsappNumber}.png`
     );
 
     const chessboardImageUrl = await handleS3Uploader(

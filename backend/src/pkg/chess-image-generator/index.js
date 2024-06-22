@@ -13,10 +13,10 @@ export class ChessImageGenerator {
    * @param out path to save image at
    * @returns path where image is saved
    */
-  static async fromFEN(FEN, lastMove, out) {
+  static async fromFEN(FEN, lastMove, fileName) {
     const chess = new Chess(FEN);
     const buffer = await this.generateBuffer(chess, lastMove);
-    return this.generatePNG(buffer, out);
+    return this.generatePNG(buffer, fileName);
   }
 
   /**
@@ -26,12 +26,13 @@ export class ChessImageGenerator {
    * @param path output
    * @returns output path
    */
-  static generatePNG(buffer, filePath) {
+  static generatePNG(buffer, fileName) {
     let dir = getGeneratedChessboardDirectory();
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-
+    
+    const filePath = path.join(dir, fileName);
     fs.writeFileSync(filePath, buffer);
     return filePath;
   }
