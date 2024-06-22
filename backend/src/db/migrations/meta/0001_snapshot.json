@@ -1,6 +1,6 @@
 {
-  "id": "14750ceb-5562-4a5f-a7e5-24de4f268292",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "66e47d31-3daa-4e21-b8a7-9cb1fa04daf6",
+  "prevId": "14750ceb-5562-4a5f-a7e5-24de4f268292",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -40,6 +40,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'"
+        },
+        "locked": {
+          "name": "locked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},

@@ -1,21 +1,26 @@
+import AWS from "aws-sdk";
 import path from "path";
 import fs from "fs";
+import generateRandomHash from "./generateRandomHash.js";
 
-export default async function s3Uploader(s3, file) {
-  const fileContent = fs.readFileSync(file);
-  const params = {
-    Bucket: "twilio-chess",
-    Key: path.basename(file),
-    Body: fileContent,
-    ACL: "public-read"
-  };
-
-  return new Promise((resolve, reject) => {
-    s3.upload(params, (err, data) => {
-      if (err) {
-        reject(err);
-      }
-      resolve(data.Location);
-    });
-  });
+export default async function s3Uploader(bucketName, file) {
+  try {
+    const s3 = new AWS.S3();
+    const fileContent = fs.readFileSync(file);
+    const [fileName, fileExt] = path.basename(file).split(".");
+    const params = {
+      Bucket: bucketName,
+      Key: `${fileName}-${generateRandomHash()}.${fileExt}`,
+      Body: fileContent,
+      ACL: "public-read"
+    };
+    const data = await s3.upload(params).promise();
+    if (!data) {
+      throw new Error("Failed to upload file");
+    } else {
+      return data.Location;
+    }
+  } catch (err) {
+    throw err;
+  }
 }

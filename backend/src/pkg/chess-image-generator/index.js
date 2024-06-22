@@ -46,14 +46,15 @@ export class ChessImageGenerator {
     const _config = applyDefaultConfig({});
     const squareSize = _config.size / 8;
 
-    ctx.fillStyle = "rgba(0, 255, 0, 0.2)";
-    ctx.fillRect(
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(0, 255, 0, 0.5)";
+    ctx.strokeRect(
       fromX * squareSize,
       fromY * squareSize,
       squareSize,
       squareSize
     );
-    ctx.fillRect(toX * squareSize, toY * squareSize, squareSize, squareSize);
+    ctx.strokeRect(toX * squareSize, toY * squareSize, squareSize, squareSize);
   }
 
   /**
@@ -64,6 +65,7 @@ export class ChessImageGenerator {
    * @returns Image buffer
    */
   static async generateBuffer(chess, lastMove, config) {
+    let move;
     const _config = applyDefaultConfig(config);
     const cv = createCanvas(_config.size, _config.size);
     const ctx = cv.getContext("2d");
@@ -74,7 +76,7 @@ export class ChessImageGenerator {
     ctx.fill();
 
     if (lastMove) {
-      this.highlightMove(ctx, chess.move(lastMove));
+      move = chess.move(lastMove);
     }
 
     const col = _config.view === "w" ? r => r + 1 : r => 7 - r + 1;
@@ -114,6 +116,10 @@ export class ChessImageGenerator {
           );
         }
       }
+    }
+
+    if (move) {
+      this.highlightMove(ctx, move);
     }
 
     return cv.toBuffer("image/png");
