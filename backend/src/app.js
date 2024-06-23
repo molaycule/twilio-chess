@@ -150,12 +150,9 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
         `${fbUserId}.png`
       );
       const chessboardImageUrl = await handleS3Uploader(fbUserId, session.id);
-      console.log("from", `messenger:${process.env.FACEBOOK_PAGE_ID}`);
-      console.log("to", `messenger:${fbUserId}`);
       const message = await twilioClient.messages.create({
-        body: "Welcome to Twilio Chess, reply by sending your move in standard chess notation",
-        mediaUrl: chessboardImageUrl,
-        from: `${process.env.TWILIO_PHONE_NUMBER}`,
+        body: `Welcome to Twilio Chess, reply by sending your move in standard chess notation ${chessboardImageUrl}`,
+        from: `messenger:${process.env.FACEBOOK_PAGE_ID}`,
         to: `messenger:${fbUserId}`
       });
       console.log("msg", message);
