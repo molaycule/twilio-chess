@@ -115,6 +115,7 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
 
   try {
     db = getDBClient();
+    console.log("req.body", req.body);
     const playerMove = req.body.Body;
     const userId = req.body.From;
     fbUserId = userId.split("messenger:")[1];
