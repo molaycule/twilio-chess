@@ -143,17 +143,15 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
     });
     sessionIsLocked = true;
 
-    console.log("fbInit", session.fbInit, session.fbInit === null);
     if (session.fbInit === null) {
-      console.log("fb init is null");
       await ChessImageGenerator.fromFEN(
         session.fen,
         undefined,
         `${fbUserId}.png`
       );
-      console.log("generated image");
       const chessboardImageUrl = await handleS3Uploader(fbUserId, session.id);
-      console.log("uploaded image");
+      console.log("from", `${pageId}`);
+      console.log("to", `${userId}`);
       const message = await twilioClient.messages.create({
         body: "Welcome to Twilio Chess, reply by sending your move in standard chess notation",
         mediaUrl: chessboardImageUrl,
