@@ -114,7 +114,7 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
     const playerMove = req.body.Body;
     const userId = req.body.From;
     const pageId = req.body.To;
-    fbUserId = userId.split("messenger:")[0];
+    fbUserId = userId.split("messenger:")[1];
     console.log("fbUserId", fbUserId);
     const sessionList = await db.query.sessions.findMany({
       where: (sessions, { eq }) => eq(sessions.contact, fbUserId)
