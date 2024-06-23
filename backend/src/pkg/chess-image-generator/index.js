@@ -6,26 +6,12 @@ import path from "path";
 import fs from "fs";
 
 export class ChessImageGenerator {
-  /**
-   * Generate and save png image from FEN
-   *
-   * @param FEN target position
-   * @param out path to save image at
-   * @returns path where image is saved
-   */
   static async fromFEN(FEN, lastMove, fileName) {
     const chess = new Chess(FEN);
     const buffer = await this.generateBuffer(chess, lastMove);
     return this.generatePNG(buffer, fileName);
   }
 
-  /**
-   * generate png from
-   *
-   * @param buffer image buffer
-   * @param path output
-   * @returns output path
-   */
   static generatePNG(buffer, fileName) {
     let dir = getGeneratedChessboardDirectory();
     if (!fs.existsSync(dir)) {
@@ -58,13 +44,6 @@ export class ChessImageGenerator {
     ctx.strokeRect(toX * squareSize, toY * squareSize, squareSize, squareSize);
   }
 
-  /**
-   * Generate image buffer of desired chess position
-   *
-   * @param chess chess.js instance containing desired fen for generation
-   * @param config Config
-   * @returns Image buffer
-   */
   static async generateBuffer(chess, lastMove, config) {
     let move;
     const _config = applyDefaultConfig(config);
