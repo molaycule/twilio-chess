@@ -132,16 +132,16 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
 
     await handleSessionUpdate({
       data: { locked: true },
-      db,
-      fbUserId
+      userContact: fbUserId,
+      db
     });
     sessionIsLocked = true;
 
     if (session.fbInit === null) {
       await handleSessionUpdate({
-        data: { fb_init: true },
-        db,
-        fbUserId
+        data: { fbInit: true },
+        userContact: fbUserId,
+        db
       });
       await ChessImageGenerator.fromFEN(
         session.fen,
@@ -181,8 +181,8 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
     if (fbUserId && sessionIsLocked) {
       await handleSessionUpdate({
         data: { locked: false },
-        db,
-        fbUserId
+        userContact: fbUserId,
+        db
       });
     }
   }
@@ -216,8 +216,8 @@ app.post("/api/chess/reply", async (req, res) => {
 
     await handleSessionUpdate({
       data: { locked: true },
-      db,
-      whatsappNumber
+      userContact: whatsappNumber,
+      db
     });
     sessionIsLocked = true;
 
@@ -251,8 +251,8 @@ app.post("/api/chess/reply", async (req, res) => {
     if (whatsappNumber && sessionIsLocked) {
       await handleSessionUpdate({
         data: { locked: false },
-        db,
-        whatsappNumber
+        userContact: whatsappNumber,
+        db
       });
     }
   }
@@ -311,8 +311,8 @@ async function gamePlayFlow({
 
   await handleSessionUpdate({
     data: { fen: afterAIMoveFEN },
-    db,
-    userContact
+    userContact,
+    db
   });
   await ChessImageGenerator.fromFEN(
     afterPlayerMoveFEN,
