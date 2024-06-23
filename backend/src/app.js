@@ -105,7 +105,7 @@ app.post("/api/chess/initiate", async (req, res) => {
 
 app.post("/api/webhook", async (req, res) => {
   console.log("req.body", req.body);
-  res.sendStatus(200);
+  handleTwilioResponse(res, "Message from webhook");
 });
 
 app.post("/api/chess/facebook/user-initiate", async (req, res) => {
