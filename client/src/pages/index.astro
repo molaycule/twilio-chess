@@ -1,13 +1,9 @@
 ---
 import "../styles/globals.css";
 import Layout from "../layouts/Layout.astro";
-import Setup from "../components/Setup.astro";
-import Medium from "../components/Medium.astro";
-import Contact from "../components/Contact.astro";
+import GameConfigStepper from "../components/GameConfigStepper.jsx";
 ---
 
 <Layout title="Chess Challenge">
-  <!-- <Setup /> -->
-  <Medium />
-  <!-- <Contact type="phone" /> -->
+  <GameConfigStepper client:load />
 </Layout>

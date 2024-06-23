@@ -1,11 +1,13 @@
 import express from "express";
 import TwilioSDK from "twilio";
 import OpenAI from "openai";
+import cors from "cors";
 import configureAWS from "./utils/configureAWS.js";
 import handleTwilioResponse from "./utils/handleTwilioResponse.js";
 import handleS3Uploader from "./utils/handleS3Uploader.js";
 import handleSessionUpdate from "./utils/handleSessionUpdate.js";
 import getDBClient from "./utils/getDBClient.js";
+import getCorsOptions from "./utils/getCorsOptions.js";
 import getGeneratedChessboardDirectory from "./utils/getGeneratedChessboardDirectory.js";
 import getUpdatedFenAfterPlayerMove from "./utils/getUpdatedFenAfterPlayerMove.js";
 import getAIMoveAndComment from "./utils/getAIMoveAndComment.js";
@@ -35,6 +37,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(getGeneratedChessboardDirectory()));
+app.use(cors(getCorsOptions()));
 
 app.post("/api/chess/initiate", async (req, res) => {
   let db, startingFEN, returnedData;
@@ -85,7 +88,10 @@ app.post("/api/chess/initiate", async (req, res) => {
       });
     }
 
-    res.json({ success: true, message: "Chess initiated" });
+    res.json({
+      success: true,
+      message: "Game On! Your Chess Match Has Begun."
+    });
   } catch (error) {
     console.log(error);
     if (returnedData) {
