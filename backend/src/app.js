@@ -138,6 +138,11 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
     sessionIsLocked = true;
 
     if (session.fbInit === null) {
+      await handleSessionUpdate({
+        data: { fbInit: true },
+        db,
+        fbUserId
+      });
       await ChessImageGenerator.fromFEN(
         session.fen,
         undefined,
@@ -148,11 +153,6 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
         res,
         `Welcome to Twilio Chess, reply by sending your move in standard chess notation. Link to preview current chess board ${chessboardImageUrl}`
       );
-      await handleSessionUpdate({
-        data: { fbInit: true },
-        db,
-        fbUserId
-      });
     } else if (session.fbInit) {
       const { comment, chessboardImageUrl } = gamePlayFlow({
         userContact: fbUserId,
