@@ -143,8 +143,9 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
     });
     sessionIsLocked = true;
 
-    console.log("fbInit", session.fbInit);
+    console.log("fbInit", session.fbInit, session.fbInit === null);
     if (session.fbInit === null) {
+      console.log("fb init is null");
       await ChessImageGenerator.fromFEN(
         session.fen,
         undefined,
