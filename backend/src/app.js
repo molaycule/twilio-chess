@@ -139,7 +139,7 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
 
     if (session.fbInit === null) {
       await handleSessionUpdate({
-        data: { fbInit: true },
+        data: { fb_init: true },
         db,
         fbUserId
       });
