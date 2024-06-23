@@ -1,23 +1,18 @@
 import { useStore } from "@nanostores/react";
 import { $gameConfigData, $isLoading } from "../store";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Crown, MoveLeft } from "lucide-react";
+import { MoveLeft } from "lucide-react";
 import Spinner from "src/components/Spinner";
 import handleGameConfigStepChange from "src/utils/handleGameConfigStepChange";
 import constants from "src/constants";
+import maskNumber from "src/utils/maskNumber";
+import GameConfigHeading from "src/components/GameConfigHeading";
+import { Label } from "@/components/ui/label";
 
-export default function Contact({ type }) {
+export default function Contact() {
   const { toast } = useToast();
   const isLoading = useStore($isLoading);
   const gameConfigData = useStore($gameConfigData);
@@ -44,10 +39,13 @@ export default function Contact({ type }) {
       }
 
       const result = await response.json();
-      toast({
-        title: result.message,
-        description: {
-          whatsapp: "Chess Challenge Awaiting! Check WhatsApp to Start Playing."
+      handleGameConfigStepChange({
+        stepIndex: 3,
+        successTitle: result.message,
+        successDescription: {
+          whatsapp: "Check your WhatsApp to begin playing.",
+          facebook:
+            "To begin, send a message to Twilio Chess on Facebook Messenger."
         }[gameConfigData.medium]
       });
     } catch (error) {
@@ -64,24 +62,32 @@ export default function Contact({ type }) {
   return (
     <main className="flex flex-col justify-center items-center h-screen gap-4">
       <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 justify-center">
-            <Crown className="h-6 w-6" />
-            <Label className="text-2xl">Chess Challenge</Label>
-            <Crown className="h-6 w-6" />
-          </CardTitle>
-          <CardDescription className="text-center">
-            Powered by Twilio & OpenAI
-          </CardDescription>
-        </CardHeader>
+        <GameConfigHeading />
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
+            <Label>
+              {
+                {
+                  whatsapp: "Whatsapp Number",
+                  facebook: "Facebook User Id"
+                }[gameConfigData.medium]
+              }
+            </Label>
             <Input
               id="contact-input"
-              type={type === "phone" ? "tel" : "email"}
-              placeholder={type === "phone" ? "Phone Number" : "Email"}
+              type={gameConfigData.medium === "whatsapp" ? "tel" : "text"}
+              placeholder={
+                gameConfigData.medium === "whatsapp"
+                  ? "Phone Number"
+                  : "User Id"
+              }
               onChange={handleOnInputChange}
-              value={gameConfigData.contact}
+              disabled={gameConfigData.medium === "facebook"}
+              value={
+                gameConfigData.medium === "facebook"
+                  ? maskNumber(gameConfigData.contact)
+                  : gameConfigData.contact
+              }
               required
             />
           </div>
@@ -99,7 +105,9 @@ export default function Contact({ type }) {
         disabled={isLoading}
         onClick={() =>
           handleGameConfigStepChange({
-            stepIndex: 1
+            stepIndex: 1,
+            gameConfigDataKey: "contact",
+            gameConfigDataValue: ""
           })
         }>
         <MoveLeft className="h-4 w-4" />

@@ -86,16 +86,12 @@ app.post("/api/chess/initiate", async (req, res) => {
         from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
         to: `whatsapp:${userData.contact}`
       });
-      res.json({
-        success: true,
-        message: "Game On! Your Chess Match Has Begun."
-      });
-    } else if (userData.medium.toLowerCase() === "facebook") {
-      res.json({
-        success: true,
-        message: "Let's start playing chess! "
-      });
     }
+
+    res.json({
+      success: true,
+      message: "Chess Challenge Awaiting!"
+    });
   } catch (error) {
     console.log(error);
     if (returnedData) {

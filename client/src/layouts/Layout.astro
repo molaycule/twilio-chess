@@ -1,5 +1,6 @@
 ---
 import { Toaster } from "@/components/ui/toaster";
+import Logos from "src/components/Logos";
 
 interface Props {
   title: string;
@@ -49,7 +50,10 @@ const { title } = Astro.props;
       crossorigin="anonymous"
       src="https://connect.facebook.net/en_US/sdk.js"></script>
   </head>
-  <body>
+  <body class="bg-cover bg-center" style="background-image: url('/bg.png');">
+    <header>
+      <Logos />
+    </header>
     <slot />
     <Toaster client:idle />
   </body>

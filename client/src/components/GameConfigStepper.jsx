@@ -4,6 +4,7 @@ import { $gameConfigStep } from "../store";
 import Setup from "./Setup";
 import Medium from "./Medium";
 import Contact from "./Contact";
+import Success from "./Success";
 
 export default function GameConfigStepper() {
   const gameConfigStep = useStore($gameConfigStep);
@@ -25,7 +26,8 @@ export default function GameConfigStepper() {
     <>
       {gameConfigStep == 0 && <Setup />}
       {gameConfigStep == 1 && <Medium />}
-      {gameConfigStep == 2 && <Contact type="phone" />}
+      {gameConfigStep == 2 && <Contact />}
+      {gameConfigStep == 3 && <Success />}
     </>
   );
 }
