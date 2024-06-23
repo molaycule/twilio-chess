@@ -112,6 +112,7 @@ app.post("/api/chess/initiate", async (req, res) => {
 
 app.post("/webhook", (req, res) => {
   const entries = req.body.entry;
+  console.log("req.body", req.body);
   for (let entry of entries) {
     for (let event of entry.messaging) {
       if (event.message) {
