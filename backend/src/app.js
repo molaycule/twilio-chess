@@ -182,7 +182,7 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
       await handleSessionUpdate({
         data: { locked: false },
         db,
-        whatsappNumber
+        fbUserId
       });
     }
   }
