@@ -14,7 +14,7 @@ import getAIMoveAndComment from "./utils/getAIMoveAndComment.js";
 import getGameEndMessage from "./utils/getGameEndMessage.js";
 import promptWinMessage from "./utils/promptWinMessage.js";
 import promptRandomizedFEN from "./utils/promptRandomizedFEN.js";
-import emailOrPhoneSchema from "./utils/emailOrPhoneSchema.js";
+import userContactSchema from "./utils/userContactSchema.js";
 import deleteS3Bucket from "./utils/deleteS3Bucket.js";
 import constants from "./constants/index.js";
 import { eq } from "drizzle-orm";
@@ -44,7 +44,7 @@ app.post("/api/chess/initiate", async (req, res) => {
   try {
     db = getDBClient();
     const userData = req.body;
-    emailOrPhoneSchema.parse(userData.contact);
+    userContactSchema.parse([userData.medium, userData.contact]);
 
     if (userData.setup.toLowerCase() === "clean") {
       startingFEN = constants.defaultFEN;
@@ -58,10 +58,10 @@ app.post("/api/chess/initiate", async (req, res) => {
 
     if (
       userData.medium.toLowerCase() !== "whatsapp" &&
-      userData.medium.toLowerCase() !== "email"
+      userData.medium.toLowerCase() !== "facebook"
     ) {
       throw new Error(
-        "Invalid medium value, medium can either be `whatsapp` or `email`"
+        "Invalid medium value, medium can either be `whatsapp` or `facebook`"
       );
     }
 
@@ -86,6 +86,13 @@ app.post("/api/chess/initiate", async (req, res) => {
         from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
         to: `whatsapp:${userData.contact}`
       });
+    } else if (userData.medium.toLowerCase() === "facebook") {
+      const message = await twilioClient.messages.create({
+        body: "Welcome to Twilio Chess, reply by sending your move in standard chess notation",
+        from: `messenger:${process.env.FACEBOOK_PAGE_ID}`,
+        to: `messenger:${userData.contact}`
+      });
+      console.log("msg", message);
     }
 
     res.json({
@@ -102,6 +109,38 @@ app.post("/api/chess/initiate", async (req, res) => {
     res.status(400).json({ success: false, error: error.message });
   }
 });
+
+app.post("/webhook", (req, res) => {
+  const entries = req.body.entry;
+  for (let entry of entries) {
+    for (let event of entry.messaging) {
+      if (event.message) {
+        handleMessage(event);
+      }
+    }
+  }
+  res.sendStatus(200);
+});
+
+function handleMessage(event) {
+  const senderID = event.sender.id;
+  const messageText = event.message.text;
+
+  // Process the message and generate a response
+  const response = `Echo: ${messageText}`;
+  console.log("senderId", senderID);
+  console.log("messageText", messageText);
+
+  // Send the response using Twilio
+  twilioClient.messages
+    .create({
+      body: response,
+      from: `messenger:${process.env.FACEBOOK_PAGE_ID}`,
+      to: `messenger:${senderID}`
+    })
+    .then(message => console.log(`Message sent: ${message.sid}`))
+    .catch(err => console.error("Error sending message:", err));
+}
 
 app.post("/api/chess/reply", async (req, res) => {
   let db, whatsappNumber, gameEndMessage, session;

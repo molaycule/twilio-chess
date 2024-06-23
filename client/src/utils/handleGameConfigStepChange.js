@@ -5,7 +5,10 @@ export default function handleGameConfigStepChange({
   gameConfigDataKey,
   gameConfigDataValue
 }) {
-  $gameConfigStep.set(stepIndex);
+  if (stepIndex) {
+    $gameConfigStep.set(stepIndex);
+  }
+
   if (gameConfigDataKey && gameConfigDataValue) {
     $gameConfigData.setKey(gameConfigDataKey, gameConfigDataValue);
   }

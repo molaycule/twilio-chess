@@ -1,5 +1,5 @@
 import { useStore } from "@nanostores/react";
-import { $gameConfigData } from "../store";
+import { $gameConfigData, $isLoading } from "../store";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,11 +13,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Crown, MoveLeft } from "lucide-react";
+import Spinner from "src/components/Spinner";
 import handleGameConfigStepChange from "src/utils/handleGameConfigStepChange";
 import constants from "src/constants";
 
 export default function Contact({ type }) {
   const { toast } = useToast();
+  const isLoading = useStore($isLoading);
   const gameConfigData = useStore($gameConfigData);
 
   const handleOnInputChange = e => {
@@ -26,6 +28,7 @@ export default function Contact({ type }) {
 
   const handleSubmit = async () => {
     try {
+      $isLoading.set(true);
       const response = await fetch(`${constants.baseURL}/api/chess/initiate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -53,6 +56,8 @@ export default function Contact({ type }) {
         title: "Error",
         description: error.message
       });
+    } finally {
+      $isLoading.set(false);
     }
   };
 
@@ -83,13 +88,15 @@ export default function Contact({ type }) {
         </CardContent>
         <CardFooter className="gap-4">
           <Button variant="secondary" className="w-full" onClick={handleSubmit}>
-            Submit
+            {isLoading && <Spinner />}
+            {isLoading ? "Initiating" : "Initiate"}
           </Button>
         </CardFooter>
       </Card>
       <Button
         variant="ghost"
         className="gap-2"
+        disabled={isLoading}
         onClick={() =>
           handleGameConfigStepChange({
             stepIndex: 1

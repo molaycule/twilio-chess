@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,10 +10,47 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/components/ui/use-toast";
 import { Crown, Gamepad2, MoveLeft } from "lucide-react";
 import handleGameConfigStepChange from "src/utils/handleGameConfigStepChange";
 
 export default function Medium() {
+  const { toast } = useToast();
+
+  const handleFBLogin = () => {
+    window.FB.login(response => {
+      if (response.authResponse) {
+        window.FB.api("/me", function (response) {
+          handleGameConfigStepChange({
+            stepIndex: 2,
+            gameConfigDataKey: "medium",
+            gameConfigDataValue: "facebook"
+          });
+          handleGameConfigStepChange({
+            gameConfigDataKey: "contact",
+            gameConfigDataValue: response.id
+          });
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "User cancelled login or did not fully authorize."
+        });
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (window.FB) {
+      window.FB.init({
+        appId: "444652281769824",
+        xfbml: true,
+        version: "v20.0"
+      });
+    }
+  });
+
   return (
     <main className="flex flex-col justify-center items-center h-screen gap-4">
       <Card className="w-full max-w-sm">
@@ -54,14 +92,8 @@ export default function Medium() {
           <Button
             variant="secondary"
             className="w-full"
-            onClick={() =>
-              handleGameConfigStepChange({
-                stepIndex: 2,
-                gameConfigDataKey: "medium",
-                gameConfigDataValue: "email"
-              })
-            }>
-            Twilio SendGrid
+            onClick={handleFBLogin}>
+            Twilio Facebook
           </Button>
         </CardFooter>
       </Card>
