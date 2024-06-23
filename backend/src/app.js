@@ -3,7 +3,6 @@ import TwilioSDK from "twilio";
 import OpenAI from "openai";
 import cors from "cors";
 import configureAWS from "./utils/configureAWS.js";
-import handleTwilioResponseWithMedia from "./utils/handleTwilioResponseWithMedia.js";
 import handleTwilioResponse from "./utils/handleTwilioResponse.js";
 import handleS3Uploader from "./utils/handleS3Uploader.js";
 import handleSessionUpdate from "./utils/handleSessionUpdate.js";
@@ -105,26 +104,20 @@ app.post("/api/chess/initiate", async (req, res) => {
 });
 
 app.post("/api/chess/facebook/user-initiate", async (req, res) => {
-  let db, fbUserId, gameEndMessage, session;
+  let db, fbUserId, session;
   let sessionIsLocked = false;
   const newGameMessage = ` Start a new game by visiting ${process.env.WEB_URL}`;
 
   try {
-    console.log("req.body", req.body);
     db = getDBClient();
     const playerMove = req.body.Body;
     const userId = req.body.From;
-    const pageId = req.body.To;
     fbUserId = userId.split("messenger:")[1];
-    console.log("fbUserId", fbUserId);
     const sessionList = await db.query.sessions.findMany({
       where: (sessions, { eq }) => eq(sessions.contact, fbUserId)
     });
 
-    console.log("sessionList", sessionList);
-    console.log("session length", sessionList.length);
     if (sessionList.length == 0) {
-      console.log("Facebook user id record not found");
       throw new Error("Facebook user id record not found");
     }
 
@@ -151,46 +144,52 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
         `${fbUserId}.png`
       );
       const chessboardImageUrl = await handleS3Uploader(fbUserId, session.id);
-      handleTwilioResponseWithMedia(
+      handleTwilioResponse(
         res,
-        "Welcome to Twilio Chess, reply by sending your move in standard chess notation",
-        chessboardImageUrl
+        `Welcome to Twilio Chess, reply by sending your move in standard chess notation. Link to preview current chess board ${chessboardImageUrl}`
       );
-      console.log("response");
-      // await handleSessionUpdate({
-      //   data: { fbInit: true, locked: false },
-      //   db,
-      //   fbUserId
-      // });
-      // sessionIsLocked = false;
+      await handleSessionUpdate({
+        data: { fbInit: true },
+        db,
+        fbUserId
+      });
+    } else if (session.fbInit) {
+      const { comment, chessboardImageUrl } = gamePlayFlow({
+        userContact: fbUserId,
+        session,
+        playerMove,
+        db,
+        openai,
+        res,
+        newGameMessage
+      });
+      handleTwilioResponse(
+        res,
+        `${comment} Link to preview current chess board ${chessboardImageUrl}. Reply by sending your move in standard chess notation`
+      );
     }
   } catch (error) {
-    console.log("error", error);
+    await gamePlayFlowErrorHandler({
+      userContact: fbUserId,
+      error,
+      db,
+      res,
+      session,
+      newGameMessage
+    });
+  } finally {
+    if (fbUserId && sessionIsLocked) {
+      await handleSessionUpdate({
+        data: { locked: false },
+        db,
+        whatsappNumber
+      });
+    }
   }
 });
 
-function handleMessage(event) {
-  const senderID = event.sender.id;
-  const messageText = event.message.text;
-
-  // Process the message and generate a response
-  const response = `Echo: ${messageText}`;
-  console.log("senderId", senderID);
-  console.log("messageText", messageText);
-
-  // Send the response using Twilio
-  twilioClient.messages
-    .create({
-      body: response,
-      from: `messenger:{${process.env.FACEBOOK_PAGE_ID}}`,
-      to: `messenger:{${senderID}}`
-    })
-    .then(message => console.log(`Message sent: ${message.sid}`))
-    .catch(err => console.error("Error sending message:", err));
-}
-
 app.post("/api/chess/reply", async (req, res) => {
-  let db, whatsappNumber, gameEndMessage, session;
+  let db, whatsappNumber, session;
   let sessionIsLocked = false;
   const newGameMessage = ` Start a new game by visiting ${process.env.WEB_URL}`;
 
@@ -222,63 +221,15 @@ app.post("/api/chess/reply", async (req, res) => {
     });
     sessionIsLocked = true;
 
-    const currentFEN = session.fen;
-    const { afterPlayerMoveFEN, gameStatusAfterPlayerMove } =
-      await getUpdatedFenAfterPlayerMove({
-        move: playerMove,
-        currentFEN
-      });
-    gameEndMessage = getGameEndMessage(gameStatusAfterPlayerMove);
-    if (gameEndMessage) {
-      await db.delete(sessions).where(eq(sessions.contact, whatsappNumber));
-      await deleteS3Bucket(session.id);
-      if (gameEndMessage.includes("checkmate")) {
-        const playerWinMessage = await promptWinMessage({
-          type: "player",
-          openai
-        });
-        handleTwilioResponse(res, playerWinMessage.concat(newGameMessage));
-      } else {
-        handleTwilioResponse(res, gameEndMessage.concat(newGameMessage));
-      }
-      return;
-    }
-
-    const { aiMove, comment, gameStatusAfterAIMove } =
-      await getAIMoveAndComment({
-        currentFEN: afterPlayerMoveFEN,
-        playerMove,
-        openai
-      });
-    const afterAIMoveFEN = aiMove.after;
-    gameEndMessage = getGameEndMessage(gameStatusAfterAIMove);
-    if (gameEndMessage) {
-      await db.delete(sessions).where(eq(sessions.contact, whatsappNumber));
-      await deleteS3Bucket(session.id);
-      if (gameEndMessage.includes("checkmate")) {
-        const aiWinMessage = await promptWinMessage({ type: "ai", openai });
-        handleTwilioResponse(res, aiWinMessage.concat(newGameMessage));
-      } else {
-        handleTwilioResponse(res, gameEndMessage.concat(newGameMessage));
-      }
-      return;
-    }
-
-    await handleSessionUpdate({
-      data: { fen: afterAIMoveFEN },
+    const { comment, chessboardImageUrl } = gamePlayFlow({
+      userContact: whatsappNumber,
+      session,
+      playerMove,
       db,
-      whatsappNumber
+      openai,
+      res,
+      newGameMessage
     });
-    await ChessImageGenerator.fromFEN(
-      afterPlayerMoveFEN,
-      aiMove.lan,
-      `${whatsappNumber}.png`
-    );
-
-    const chessboardImageUrl = await handleS3Uploader(
-      whatsappNumber,
-      session.id
-    );
     await twilioClient.messages.create({
       body: `${comment} Reply by sending your move in standard chess notation`,
       mediaUrl: chessboardImageUrl,
@@ -288,22 +239,14 @@ app.post("/api/chess/reply", async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.log(error);
-    if (error.message.includes("Invalid player move")) {
-      handleTwilioResponse(
-        res,
-        "Invalid move. Please use standard chess notation (e.g. e4, e2e4, or e2-e4) and ensure your king isn't in check."
-      );
-    } else if (error.message.includes(constants.aiMaxRetryMessage)) {
-      await db.delete(sessions).where(eq(sessions.contact, whatsappNumber));
-      await deleteS3Bucket(session.id);
-      handleTwilioResponse(
-        res,
-        constants.aiMaxRetryMessage.concat(newGameMessage)
-      );
-    } else {
-      res.status(400).json({ success: false, error: error.message });
-    }
+    await gamePlayFlowErrorHandler({
+      userContact: whatsappNumber,
+      error,
+      db,
+      res,
+      session,
+      newGameMessage
+    });
   } finally {
     if (whatsappNumber && sessionIsLocked) {
       await handleSessionUpdate({
@@ -314,6 +257,102 @@ app.post("/api/chess/reply", async (req, res) => {
     }
   }
 });
+
+async function gamePlayFlow({
+  session,
+  playerMove,
+  db,
+  userContact,
+  openai,
+  res,
+  newGameMessage
+}) {
+  const currentFEN = session.fen;
+  const { afterPlayerMoveFEN, gameStatusAfterPlayerMove } =
+    await getUpdatedFenAfterPlayerMove({
+      move: playerMove,
+      currentFEN
+    });
+
+  let gameEndMessage = getGameEndMessage(gameStatusAfterPlayerMove);
+  if (gameEndMessage) {
+    await db.delete(sessions).where(eq(sessions.contact, userContact));
+    await deleteS3Bucket(session.id);
+    if (gameEndMessage.includes("checkmate")) {
+      const playerWinMessage = await promptWinMessage({
+        type: "player",
+        openai
+      });
+      handleTwilioResponse(res, playerWinMessage.concat(newGameMessage));
+    } else {
+      handleTwilioResponse(res, gameEndMessage.concat(newGameMessage));
+    }
+    return;
+  }
+
+  const { aiMove, comment, gameStatusAfterAIMove } = await getAIMoveAndComment({
+    currentFEN: afterPlayerMoveFEN,
+    playerMove,
+    openai
+  });
+  const afterAIMoveFEN = aiMove.after;
+  gameEndMessage = getGameEndMessage(gameStatusAfterAIMove);
+  if (gameEndMessage) {
+    await db.delete(sessions).where(eq(sessions.contact, userContact));
+    await deleteS3Bucket(session.id);
+    if (gameEndMessage.includes("checkmate")) {
+      const aiWinMessage = await promptWinMessage({ type: "ai", openai });
+      handleTwilioResponse(res, aiWinMessage.concat(newGameMessage));
+    } else {
+      handleTwilioResponse(res, gameEndMessage.concat(newGameMessage));
+    }
+    return;
+  }
+
+  await handleSessionUpdate({
+    data: { fen: afterAIMoveFEN },
+    db,
+    userContact
+  });
+  await ChessImageGenerator.fromFEN(
+    afterPlayerMoveFEN,
+    aiMove.lan,
+    `${userContact}.png`
+  );
+  const chessboardImageUrl = await handleS3Uploader(userContact, session.id);
+  return { comment, chessboardImageUrl };
+}
+
+async function gamePlayFlowErrorHandler({
+  error,
+  db,
+  res,
+  session,
+  userContact,
+  newGameMessage
+}) {
+  console.log(error);
+  try {
+    if (error.message.includes("Invalid player move")) {
+      handleTwilioResponse(
+        res,
+        "Invalid move. Please use standard chess notation (e.g. e4, e2e4, or e2-e4) and ensure your king isn't in check."
+      );
+    } else if (error.message.includes(constants.aiMaxRetryMessage)) {
+      await db.delete(sessions).where(eq(sessions.contact, userContact));
+      await deleteS3Bucket(session.id);
+      handleTwilioResponse(
+        res,
+        constants.aiMaxRetryMessage.concat(newGameMessage)
+      );
+    } else {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  } catch (innerError) {
+    console.error("Error handling game play flow error:", innerError);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+}
 
 // Run the server!
 const port = process.env.PORT || 4000;
