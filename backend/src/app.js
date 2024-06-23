@@ -110,8 +110,8 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
 
   try {
     db = getDBClient();
-    const playerMove = req.body.Body;
-    const userId = req.body.From;
+    const playerMove = req.body.Body || "e4";
+    const userId = req.body.From || "messenger:7737511812969346";
     fbUserId = userId.split("messenger:")[1];
     const sessionList = await db.query.sessions.findMany({
       where: (sessions, { eq }) => eq(sessions.contact, fbUserId)
@@ -154,7 +154,7 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
         `Welcome to Twilio Chess, reply by sending your move in standard chess notation. Link to preview current chess board ${chessboardImageUrl}`
       );
     } else if (session.fbInit) {
-      const { comment, chessboardImageUrl } = gamePlayFlow({
+      const { comment, chessboardImageUrl } = await gamePlayFlow({
         userContact: fbUserId,
         session,
         playerMove,
@@ -221,7 +221,7 @@ app.post("/api/chess/reply", async (req, res) => {
     });
     sessionIsLocked = true;
 
-    const { comment, chessboardImageUrl } = gamePlayFlow({
+    const { comment, chessboardImageUrl } = await gamePlayFlow({
       userContact: whatsappNumber,
       session,
       playerMove,
