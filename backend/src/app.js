@@ -155,8 +155,8 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
       const message = await twilioClient.messages.create({
         body: "Welcome to Twilio Chess, reply by sending your move in standard chess notation",
         mediaUrl: chessboardImageUrl,
-        from: `messenger:${process.env.FACEBOOK_PAGE_ID}`,
-        to: `messenger:${fbUserId}`
+        from: `messenger:{${process.env.FACEBOOK_PAGE_ID}}`,
+        to: `messenger:{${fbUserId}}`
       });
       console.log("msg", message);
       await handleSessionUpdate({
@@ -185,8 +185,8 @@ function handleMessage(event) {
   twilioClient.messages
     .create({
       body: response,
-      from: `messenger:${process.env.FACEBOOK_PAGE_ID}`,
-      to: `messenger:${senderID}`
+      from: `messenger:{${process.env.FACEBOOK_PAGE_ID}}`,
+      to: `messenger:{${senderID}}`
     })
     .then(message => console.log(`Message sent: ${message.sid}`))
     .catch(err => console.error("Error sending message:", err));
