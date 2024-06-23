@@ -103,6 +103,11 @@ app.post("/api/chess/initiate", async (req, res) => {
   }
 });
 
+app.post("/api/webhook", async (req, res) => {
+  console.log("req.body", req.body);
+  res.statusCode(200);
+});
+
 app.post("/api/chess/facebook/user-initiate", async (req, res) => {
   let db, fbUserId, session;
   let sessionIsLocked = false;
@@ -110,8 +115,8 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
 
   try {
     db = getDBClient();
-    const playerMove = req.body.Body || "e4";
-    const userId = req.body.From || "messenger:7737511812969346";
+    const playerMove = req.body.Body;
+    const userId = req.body.From;
     fbUserId = userId.split("messenger:")[1];
     const sessionList = await db.query.sessions.findMany({
       where: (sessions, { eq }) => eq(sessions.contact, fbUserId)
