@@ -17,31 +17,10 @@ export class ChessImageGenerator {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
+
     const filePath = path.join(dir, fileName);
     fs.writeFileSync(filePath, buffer);
     return filePath;
-  }
-
-  static highlightMove(ctx, move) {
-    const from = move.from;
-    const to = move.to;
-    const fromX = from.charCodeAt(0) - "a".charCodeAt(0);
-    const fromY = 8 - parseInt(from[1]);
-    const toX = to.charCodeAt(0) - "a".charCodeAt(0);
-    const toY = 8 - parseInt(to[1]);
-    const _config = applyDefaultConfig({});
-    const squareSize = _config.size / 8;
-
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "rgba(0, 255, 0, 0.5)";
-    ctx.strokeRect(
-      fromX * squareSize,
-      fromY * squareSize,
-      squareSize,
-      squareSize
-    );
-    ctx.strokeRect(toX * squareSize, toY * squareSize, squareSize, squareSize);
   }
 
   static async generateBuffer(chess, lastMove, config) {
@@ -103,5 +82,26 @@ export class ChessImageGenerator {
     }
 
     return cv.toBuffer("image/png");
+  }
+
+  static highlightMove(ctx, move) {
+    const from = move.from;
+    const to = move.to;
+    const fromX = from.charCodeAt(0) - "a".charCodeAt(0);
+    const fromY = 8 - parseInt(from[1]);
+    const toX = to.charCodeAt(0) - "a".charCodeAt(0);
+    const toY = 8 - parseInt(to[1]);
+    const _config = applyDefaultConfig({});
+    const squareSize = _config.size / 8;
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(0, 255, 0, 0.5)";
+    ctx.strokeRect(
+      fromX * squareSize,
+      fromY * squareSize,
+      squareSize,
+      squareSize
+    );
+    ctx.strokeRect(toX * squareSize, toY * squareSize, squareSize, squareSize);
   }
 }
