@@ -105,7 +105,7 @@ app.post("/api/chess/initiate", async (req, res) => {
 
 app.post("/api/webhook", async (req, res) => {
   console.log("req.body", req.body);
-  res.statusCode(200);
+  res.sendStatus(200);
 });
 
 app.post("/api/chess/facebook/user-initiate", async (req, res) => {
