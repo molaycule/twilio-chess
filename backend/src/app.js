@@ -3,6 +3,7 @@ import TwilioSDK from "twilio";
 import OpenAI from "openai";
 import cors from "cors";
 import configureAWS from "./utils/configureAWS.js";
+import handleTwilioResponseWithMedia from "./utils/handleTwilioResponseWithMedia.js";
 import handleTwilioResponse from "./utils/handleTwilioResponse.js";
 import handleS3Uploader from "./utils/handleS3Uploader.js";
 import handleSessionUpdate from "./utils/handleSessionUpdate.js";
@@ -150,9 +151,10 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
         `${fbUserId}.png`
       );
       const chessboardImageUrl = await handleS3Uploader(fbUserId, session.id);
-      handleTwilioResponse(
+      handleTwilioResponseWithMedia(
         res,
-        `Welcome to Twilio Chess, reply by sending your move in standard chess notation. ${chessboardImageUrl}`
+        "Welcome to Twilio Chess, reply by sending your move in standard chess notation",
+        chessboardImageUrl
       );
       console.log("response");
       // await handleSessionUpdate({
@@ -165,7 +167,6 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
   } catch (error) {
     console.log("error", error);
   }
-  res.sendStatus(200);
 });
 
 function handleMessage(event) {
