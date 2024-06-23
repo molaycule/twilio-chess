@@ -168,7 +168,9 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
       });
       sessionIsLocked = false;
     }
-  } catch (error) {}
+  } catch (error) {
+    console.log("error", error);
+  }
   res.sendStatus(200);
 });
 
