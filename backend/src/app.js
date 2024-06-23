@@ -115,11 +115,15 @@ app.post("/api/chess/facebook/user-initiate", async (req, res) => {
     const userId = req.body.From;
     const pageId = req.body.To;
     fbUserId = userId.split("messenger:")[0];
+    console.log("fbUserId", fbUserId);
     const sessionList = await db.query.sessions.findMany({
       where: (sessions, { eq }) => eq(sessions.contact, fbUserId)
     });
 
+    console.log("sessionList", sessionList);
+    console.log("session length", sessionList.length);
     if (sessionList.length == 0) {
+      console.log("Facebook user id record not found");
       throw new Error("Facebook user id record not found");
     }
 
