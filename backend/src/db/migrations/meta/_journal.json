@@ -15,6 +15,13 @@
       "when": 1718999210535,
       "tag": "0001_rich_adam_destine",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1719139689322,
+      "tag": "0002_large_nuke",
+      "breakpoints": true
     }
   ]
 }

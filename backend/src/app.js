@@ -86,18 +86,11 @@ app.post("/api/chess/initiate", async (req, res) => {
         from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
         to: `whatsapp:${userData.contact}`
       });
-    } else if (userData.medium.toLowerCase() === "facebook") {
-      const message = await twilioClient.messages.create({
-        body: "Welcome to Twilio Chess, reply by sending your move in standard chess notation",
-        from: `messenger:${process.env.FACEBOOK_PAGE_ID}`,
-        to: `messenger:${userData.contact}`
-      });
-      console.log("msg", message);
     }
 
     res.json({
       success: true,
-      message: "Game On! Your Chess Match Has Begun."
+      message: "Game On! Your Chess Match Has Begun." // for whatsapp TODO: for facebook
     });
   } catch (error) {
     console.log(error);
@@ -110,16 +103,65 @@ app.post("/api/chess/initiate", async (req, res) => {
   }
 });
 
-app.post("/webhook", (req, res) => {
-  const entries = req.body.entry;
-  console.log("req.body", req.body);
-  for (let entry of entries) {
-    for (let event of entry.messaging) {
-      if (event.message) {
-        handleMessage(event);
-      }
+app.post("/api/chess/facebook/user-initiate", async (req, res) => {
+  let db, fbUserId, gameEndMessage, session;
+  let sessionIsLocked = false;
+  const newGameMessage = ` Start a new game by visiting ${process.env.WEB_URL}`;
+
+  try {
+    console.log("req.body", req.body);
+    db = getDBClient();
+    const playerMove = req.body.Body;
+    const userId = req.body.From;
+    const pageId = req.body.To;
+    fbUserId = userId.split("messenger:")[0];
+    const sessionList = await db.query.sessions.findMany({
+      where: (sessions, { eq }) => eq(sessions.contact, fbUserId)
+    });
+
+    if (sessionList.length == 0) {
+      throw new Error("Facebook user id record not found");
     }
-  }
+
+    session = sessionList[0];
+    if (session.locked) {
+      handleTwilioResponse(
+        res,
+        "Your previous move is still been processed. Please wait before sending a new reply"
+      );
+      return;
+    }
+
+    await handleSessionUpdate({
+      data: { locked: true },
+      db,
+      fbUserId
+    });
+    sessionIsLocked = true;
+
+    console.log("fbInit", session.fbInit);
+    if (session.fbInit === null) {
+      await ChessImageGenerator.fromFEN(
+        session.fen,
+        undefined,
+        `${fbUserId}.png`
+      );
+      const chessboardImageUrl = await handleS3Uploader(fbUserId, session.id);
+      const message = await twilioClient.messages.create({
+        body: "Welcome to Twilio Chess, reply by sending your move in standard chess notation",
+        mediaUrl: chessboardImageUrl,
+        from: `${pageId}`,
+        to: `${userId}`
+      });
+      console.log("msg", message);
+      await handleSessionUpdate({
+        data: { fbInit: true, locked: false },
+        db,
+        fbUserId
+      });
+      sessionIsLocked = false;
+    }
+  } catch (error) {}
   res.sendStatus(200);
 });
 

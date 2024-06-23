@@ -7,5 +7,6 @@ export const sessions = pgTable("sessions", {
   medium: text("medium").default("whatsapp"),
   contact: text("contact").notNull().unique(),
   fen: text("fen").notNull().default(constants.defaultFEN),
-  locked: boolean("locked").notNull().default(false)
+  locked: boolean("locked").notNull().default(false),
+  fbInit: boolean("fb_init")
 });
