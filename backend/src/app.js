@@ -9,10 +9,6 @@ import handleSessionUpdate from "./utils/handleSessionUpdate.js";
 import getDBClient from "./utils/getDBClient.js";
 import getCorsOptions from "./utils/getCorsOptions.js";
 import getGeneratedChessboardDirectory from "./utils/getGeneratedChessboardDirectory.js";
-import getUpdatedFenAfterPlayerMove from "./utils/getUpdatedFenAfterPlayerMove.js";
-import getAIMoveAndComment from "./utils/getAIMoveAndComment.js";
-import getGameEndMessage from "./utils/getGameEndMessage.js";
-import promptWinMessage from "./utils/promptWinMessage.js";
 import promptRandomizedFEN from "./utils/promptRandomizedFEN.js";
 import userContactSchema from "./utils/userContactSchema.js";
 import deleteS3Bucket from "./utils/deleteS3Bucket.js";
@@ -21,6 +17,10 @@ import { eq } from "drizzle-orm";
 import { sessions } from "./db/schema.js";
 import { ChessImageGenerator } from "./pkg/chess-image-generator/index.js";
 import { config } from "dotenv";
+import {
+  gamePlayFlow,
+  gamePlayFlowErrorHandler
+} from "./utils/gamePlayHandlers.js";
 
 config({ path: "./src/.env" });
 configureAWS();
@@ -72,7 +72,7 @@ app.post("/api/chess/initiate", async (req, res) => {
     await ChessImageGenerator.fromFEN(
       startingFEN,
       undefined,
-      `${userData.contact.split(".")[0]}.png`
+      `${userData.contact}.png`
     );
 
     const chessboardImageUrl = await handleS3Uploader(
@@ -86,12 +86,16 @@ app.post("/api/chess/initiate", async (req, res) => {
         from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
         to: `whatsapp:${userData.contact}`
       });
+      res.json({
+        success: true,
+        message: "Game On! Your Chess Match Has Begun."
+      });
+    } else if (userData.medium.toLowerCase() === "facebook") {
+      res.json({
+        success: true,
+        message: "Let's start playing chess! "
+      });
     }
-
-    res.json({
-      success: true,
-      message: "Game On! Your Chess Match Has Begun." // for whatsapp TODO: for facebook
-    });
   } catch (error) {
     console.log(error);
     if (returnedData) {
@@ -257,102 +261,6 @@ app.post("/api/chess/reply", async (req, res) => {
     }
   }
 });
-
-async function gamePlayFlow({
-  session,
-  playerMove,
-  db,
-  userContact,
-  openai,
-  res,
-  newGameMessage
-}) {
-  const currentFEN = session.fen;
-  const { afterPlayerMoveFEN, gameStatusAfterPlayerMove } =
-    await getUpdatedFenAfterPlayerMove({
-      move: playerMove,
-      currentFEN
-    });
-
-  let gameEndMessage = getGameEndMessage(gameStatusAfterPlayerMove);
-  if (gameEndMessage) {
-    await db.delete(sessions).where(eq(sessions.contact, userContact));
-    await deleteS3Bucket(session.id);
-    if (gameEndMessage.includes("checkmate")) {
-      const playerWinMessage = await promptWinMessage({
-        type: "player",
-        openai
-      });
-      handleTwilioResponse(res, playerWinMessage.concat(newGameMessage));
-    } else {
-      handleTwilioResponse(res, gameEndMessage.concat(newGameMessage));
-    }
-    return;
-  }
-
-  const { aiMove, comment, gameStatusAfterAIMove } = await getAIMoveAndComment({
-    currentFEN: afterPlayerMoveFEN,
-    playerMove,
-    openai
-  });
-  const afterAIMoveFEN = aiMove.after;
-  gameEndMessage = getGameEndMessage(gameStatusAfterAIMove);
-  if (gameEndMessage) {
-    await db.delete(sessions).where(eq(sessions.contact, userContact));
-    await deleteS3Bucket(session.id);
-    if (gameEndMessage.includes("checkmate")) {
-      const aiWinMessage = await promptWinMessage({ type: "ai", openai });
-      handleTwilioResponse(res, aiWinMessage.concat(newGameMessage));
-    } else {
-      handleTwilioResponse(res, gameEndMessage.concat(newGameMessage));
-    }
-    return;
-  }
-
-  await handleSessionUpdate({
-    data: { fen: afterAIMoveFEN },
-    userContact,
-    db
-  });
-  await ChessImageGenerator.fromFEN(
-    afterPlayerMoveFEN,
-    aiMove.lan,
-    `${userContact}.png`
-  );
-  const chessboardImageUrl = await handleS3Uploader(userContact, session.id);
-  return { comment, chessboardImageUrl };
-}
-
-async function gamePlayFlowErrorHandler({
-  error,
-  db,
-  res,
-  session,
-  userContact,
-  newGameMessage
-}) {
-  console.log(error);
-  try {
-    if (error.message.includes("Invalid player move")) {
-      handleTwilioResponse(
-        res,
-        "Invalid move. Please use standard chess notation (e.g. e4, e2e4, or e2-e4) and ensure your king isn't in check."
-      );
-    } else if (error.message.includes(constants.aiMaxRetryMessage)) {
-      await db.delete(sessions).where(eq(sessions.contact, userContact));
-      await deleteS3Bucket(session.id);
-      handleTwilioResponse(
-        res,
-        constants.aiMaxRetryMessage.concat(newGameMessage)
-      );
-    } else {
-      res.status(400).json({ success: false, error: error.message });
-    }
-  } catch (innerError) {
-    console.error("Error handling game play flow error:", innerError);
-    res.status(500).json({ success: false, error: "Internal Server Error" });
-  }
-}
 
 // Run the server!
 const port = process.env.PORT || 4000;
