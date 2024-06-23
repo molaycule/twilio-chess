@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.7.0",
+    "@astrojs/cloudflare": "^11.0.0",
     "@astrojs/react": "^3.6.0",
     "@astrojs/tailwind": "^5.1.0",
     "@nanostores/react": "^0.7.2",
