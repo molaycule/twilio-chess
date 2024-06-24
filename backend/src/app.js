@@ -103,11 +103,6 @@ app.post("/api/chess/initiate", async (req, res) => {
   }
 });
 
-app.post("/api/webhook", async (req, res) => {
-  console.log("req.body", req.body);
-  handleTwilioResponse(res, "Message from webhook");
-});
-
 app.post("/api/chess/facebook/user-initiate", async (req, res) => {
   let db, fbUserId, session;
   let sessionIsLocked = false;
