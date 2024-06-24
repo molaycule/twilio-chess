@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { MoveLeft } from "lucide-react";
+import constants from "src/constants";
 import GameConfigHeading from "src/components/GameConfigHeading";
 import handleGameConfigStepChange from "src/utils/handleGameConfigStepChange";
 
