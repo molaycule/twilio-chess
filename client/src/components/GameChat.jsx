@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { MoveLeft } from "lucide-react";
+import Spinner from "src/components/Spinner";
 import constants from "src/constants";
 import GameConfigHeading from "src/components/GameConfigHeading";
 import handleGameConfigStepChange from "src/utils/handleGameConfigStepChange";
@@ -39,6 +40,7 @@ export default function GameChat() {
 
       const result = await response.json();
       setChatbotMessage(result.message);
+      setMessage("");
     } catch (error) {
       toast({
         variant: "destructive",
@@ -76,7 +78,8 @@ export default function GameChat() {
             className="w-full"
             onClick={handleSendMessage}
             disabled={isLoading}>
-            Send Message
+            {isLoading && <Spinner />}
+            {isLoading ? "Sending Message" : "Send Message"}
           </Button>
         </CardFooter>
       </Card>
