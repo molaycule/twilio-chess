@@ -23,6 +23,10 @@ export default function Contact() {
 
   const handleSubmit = async () => {
     try {
+      if (!gameConfigData.contact) {
+        throw new Error("Please input the required information");
+      }
+
       $isLoading.set(true);
       const response = await fetch(`${constants.baseURL}/api/chess/initiate`, {
         method: "POST",

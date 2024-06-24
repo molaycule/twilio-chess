@@ -3,10 +3,11 @@ import { $gameConfigData, $successDescription, $successTitle } from "../store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Swords } from "lucide-react";
+import { Swords, MessageCircleMore } from "lucide-react";
 import Whatsapp from "src/icons/Whatsapp";
 import FacebookMessenger from "src/icons/FacebookMessenger";
 import GameConfigHeading from "src/components/GameConfigHeading";
+import handleGameConfigStepChange from "src/utils/handleGameConfigStepChange";
 
 export default function Success() {
   const successTitle = useStore($successTitle);
@@ -59,6 +60,13 @@ export default function Success() {
           )}
         </CardFooter>
       </Card>
+      <Button
+        variant="ghost"
+        className="gap-2"
+        onClick={() => handleGameConfigStepChange({ stepIndex: 4 })}>
+        <MessageCircleMore className="h-4 w-4" />
+        Level up your Chess with AI companion
+      </Button>
     </main>
   );
 }

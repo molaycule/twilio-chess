@@ -25,10 +25,15 @@ import {
 config({ path: "./src/.env" });
 configureAWS();
 
-const twilioClient = TwilioSDK(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+const AccessToken = TwilioSDK.jwt.AccessToken;
+const ChatGrant = AccessToken.ChatGrant;
+const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+const twilioChatServiceSid = process.env.TWILIO_CHAT_SERVICE_SID;
+const twilioApiKeySid = process.env.TWILIO_API_KEY_SID;
+const twilioApiSecret = process.env.TWILIO_API_SECRET;
+const twilioClient = TwilioSDK(twilioAccountSid, twilioAuthToken);
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
@@ -38,6 +43,50 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(getGeneratedChessboardDirectory()));
 app.use(cors(getCorsOptions()));
+
+app.post("/api/chess/twilio/token", (req, res) => {
+  const identity = req.body.identity;
+  const token = new AccessToken(
+    twilioAccountSid,
+    twilioApiKeySid,
+    twilioApiSecret,
+    { identity }
+  );
+
+  const chatGrant = new ChatGrant({
+    serviceSid: twilioChatServiceSid
+  });
+  token.addGrant(chatGrant);
+
+  res.send({ token: token.toJwt() });
+});
+
+app.post("/api/chess/twilio/chat", async (req, res) => {
+  try {
+    const userMessage = req.body.message || "Teach me how to play chess";
+    const userMessageInstance = await twilioClient.conversations.v1
+      .conversations(process.env.TWILIO_CONVERSATION_SID)
+      .messages.create({
+        body: `You are a chess tutor. ${userMessage}`,
+        from: "user"
+      });
+    const response = await openai.chat.completions.create({
+      messages: [{ role: "user", content: userMessageInstance.body }],
+      model: "gpt-4o"
+    });
+    const chatbotMessageInstance = await twilioClient.conversations.v1
+      .conversations(process.env.TWILIO_CONVERSATION_SID)
+      .messages.create({
+        body: response.choices[0].message.content,
+        from: "chatbot"
+      });
+
+    res.send({ message: chatbotMessageInstance.body });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
 
 app.post("/api/chess/initiate", async (req, res) => {
   let db, startingFEN, returnedData;
