@@ -71,7 +71,15 @@ app.post("/api/chess/twilio/chat", async (req, res) => {
         from: "user"
       });
     const response = await openai.chat.completions.create({
-      messages: [{ role: "user", content: userMessageInstance.body }],
+      messages: [
+        {
+          role: "system",
+          content: `You are a chess tutor. Always provide short and concise information.
+          Response should not be more than five lines. Do not return response in any markdown format.
+          Response should be in plain text always and should be easy to understand for the user to read.`
+        },
+        { role: "user", content: userMessageInstance.body }
+      ],
       model: "gpt-4o"
     });
     const chatbotMessageInstance = await twilioClient.conversations.v1

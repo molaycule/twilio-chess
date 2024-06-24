@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useStore } from "@nanostores/react";
 import { $isLoading } from "../store";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { MoveLeft } from "lucide-react";
 import constants from "src/constants";
@@ -55,10 +55,14 @@ export default function GameChat() {
       <Card className="w-full max-w-sm">
         <GameConfigHeading />
         <CardContent className="grid gap-4">
-          <div>
-            {chatbotMessage && <Label>{chatbotMessage}</Label>}
-            <Input
-              type="text"
+          <div className="flex flex-col gap-8">
+            {chatbotMessage && (
+              <div className="max-h-80 overflow-auto">
+                <Label>{chatbotMessage}</Label>
+              </div>
+            )}
+            <Textarea
+              rows={3}
               placeholder="Enter your message to learn more about chess"
               onChange={e => setMessage(e.target.value)}
               value={message}
