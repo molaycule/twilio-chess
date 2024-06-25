@@ -27,7 +27,7 @@ The frontend is built with React, providing a dynamic and responsive interface f
 - pages/:
   - chess.astro: Chess page.
   - index.astro: Home page.
-- store/index.js: State management (possibly using a library like Redux).
+- store/index.js: State management.
 - styles/globals.css: Global CSS styles.
 - utils/: Utility functions.
 

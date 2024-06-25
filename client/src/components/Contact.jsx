@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { MoveLeft } from "lucide-react";
+import { Info, MoveLeft } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Spinner from "src/components/Spinner";
 import handleGameConfigStepChange from "src/utils/handleGameConfigStepChange";
 import constants from "src/constants";
@@ -69,20 +70,27 @@ export default function Contact() {
         <GameConfigHeading />
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label>
-              {
-                {
-                  whatsapp: "Whatsapp Number",
-                  facebook: "Facebook User Id"
-                }[gameConfigData.medium]
-              }
-            </Label>
+            {gameConfigData.medium === "whatsapp" ? (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>New to WhatsApp game?</AlertTitle>
+                <AlertDescription className="text-gray-400">
+                  1. Before initiating: <strong>Open WhatsApp</strong>
+                  <br />
+                  2. Add this number: <strong>+14155238886</strong>
+                  <br />
+                  3. Send this message: <strong>join powder-hurt</strong>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Label>Facebook User Id</Label>
+            )}
             <Input
               id="contact-input"
               type={gameConfigData.medium === "whatsapp" ? "tel" : "text"}
               placeholder={
                 gameConfigData.medium === "whatsapp"
-                  ? "Phone Number"
+                  ? "Whatsapp Phone Number"
                   : "User Id"
               }
               onChange={handleOnInputChange}
